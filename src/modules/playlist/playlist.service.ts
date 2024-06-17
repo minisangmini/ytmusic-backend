@@ -96,4 +96,13 @@ export class PlaylistService {
 
     return songs;
   }
+
+  async updatePlaylistName(playlistId: number, userId: string, playlistName: string) {
+    const user = await this.authService.isExistUser(userId);
+    const playlist = await this.isExistPlaylist(playlistId, user);
+
+    playlist.name = playlistName;
+
+    await this.playlistRepository.save(playlist);
+  }
 }

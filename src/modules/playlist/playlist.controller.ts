@@ -1,18 +1,18 @@
-import { Controller, Delete, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { PlaylistService } from './playlist.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { ApiBearerAuth, ApiConflictResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse, getSchemaPath } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConflictResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { MusicDto } from '../music/dto/response/music.dto';
 
-@ApiTags('playlist')
 @Controller('playlist')
+@UseGuards(JwtAuthGuard)
+@ApiTags('playlist')
+@ApiBearerAuth('access-token')
 export class PlaylistController {
   constructor(private readonly playlistService: PlaylistService) { }
 
-  @UseGuards(JwtAuthGuard)
   @Post('/:name/create')
   @HttpCode(200)
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '플레이리스트 생성', description: '플레이리스트를 생성합니다' })
   @ApiParam({ name: 'name', description: '플레이리스트 이름', type: String })
   @ApiOkResponse({ description: '플레이리스트 생성을 성공한 경우' })
@@ -21,9 +21,7 @@ export class PlaylistController {
     await this.playlistService.createPlaylist(name, req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete('/:id/delete')
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '플레이리스트 삭제', description: '플레이리스트를 삭제합니다' })
   @ApiParam({ name: 'id', description: '플레이리스트 이름', type: String })
   @ApiNoContentResponse({ description: '플레이리스트 삭제를 성공한 경우' })
@@ -33,9 +31,7 @@ export class PlaylistController {
     await this.playlistService.deletePlaylist(parseInt(id), req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('/') 
-  @ApiBearerAuth('access-token')
+  @Get('/')
   @ApiOperation({ summary: '유저의 플레이리스트', description: '유저의 플레이리스트를 반환합니다' })
   @ApiOkResponse({ description: '노래를 성공적으로 반환한 경우', type: MusicDto, isArray: true })
   @ApiUnauthorizedResponse({ description: '토큰이 유효하지 않는 경우' })
@@ -43,10 +39,8 @@ export class PlaylistController {
     return await this.playlistService.getPlaylists(req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('/:id/add/:musicId')
   @HttpCode(200)
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '노래 추가', description: '플레이리스트에 노래를 추가합니다' })
   @ApiParam({ name: 'id', description: '플레이리스트 id', type: String })
   @ApiParam({ name: 'musicId', description: '노래 id', type: String })
@@ -71,9 +65,7 @@ export class PlaylistController {
     await this.playlistService.addMusic(parseInt(id), musicId, req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete('/:id/delete/:musicId')
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '노래 삭제', description: '플레이리스트에 노래를 삭제합니다' })
   @ApiParam({ name: 'id', description: '플레이리스트 id', type: String })
   @ApiParam({ name: 'musicId', description: '노래 id', type: String })
@@ -97,9 +89,7 @@ export class PlaylistController {
     await this.playlistService.deleteMusic(parseInt(id), musicId, req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('/:id') 
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '노래 리스트 검색', description: '플레이리스트에 있는 노래를 반환합니다' })
   @ApiParam({ name: 'id', description: '플레이리스트 id', type: String })
   @ApiOkResponse({ description: '노래를 성공적으로 반환한 경우', type: MusicDto, isArray: true })
@@ -107,5 +97,16 @@ export class PlaylistController {
   @ApiNotFoundResponse({ description: '플레이리스트가 유효하지 않는 경우' })
   async getSongInfoByPlaylist(@Req() req, @Param('id') id: string) {
     return await this.playlistService.getSongInfoByPlaylist(parseInt(id), req.user.userId);
+  }
+
+  @Patch('/:id/:name')
+  @ApiOperation({ summary: '플레이리스트 제목 변경', description: '플레이리스의 제목을 변경합니다' })
+  @ApiParam({ name: 'id', description: '플레이리스트 id', type: String })
+  @ApiParam({ name: 'name', description: '변경될 플레이리스트의 이름', type: String })
+  @ApiOkResponse({ description: '이름을 성공적으로 수정한 경우' })
+  @ApiUnauthorizedResponse({ description: '토큰이 유효하지 않는 경우' })
+  @ApiNotFoundResponse({ description: '플레이리스트가 유효하지 않는 경우' })
+  async updatePlaylistName(@Req() req, @Param('id') id: string, @Param('name') name: string) {
+    await this.playlistService.updatePlaylistName(parseInt(id), req.user.userId, name);
   }
 }
